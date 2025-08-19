@@ -164,53 +164,65 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
     const vignette = new ShaderPass(vignetteShader as any);
     composer.addPass(vignette);
 
-    // Planet factory
-    function createPlanet(size: number, color: number, distance: number, speed: number, tilt = 0.02) {
-      const group = new THREE.Group();
-      const planet = new THREE.Mesh(
-        new THREE.SphereGeometry(size, 48, 48),
-        new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.0 })
-      );
-      planet.rotation.z = tilt;
-      const pivot = new THREE.Object3D();
-      pivot.position.x = distance;
+    // Ambient/hemisphere fill to lift shadows
+    const hemi = new THREE.HemisphereLight(0x6b7c93, 0x0d0f14, 0.35);
+    scene.add(hemi);
 
-      const ringGeo = new THREE.RingGeometry(distance - 0.04, distance + 0.04, 256);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x334155, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.rotation.x = Math.PI / 2;
-      scene.add(ring);
+    // Planet factory with subtle rim/fresnel for readability
+    function createPlanet(name: string, size: number, color: number, distance: number, speed: number, tilt = 0.02, rim = 0.18) {
+      const group = new THREE.Group();
+      const material = new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.02 });
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms.uRim = { value: rim };
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <common>',
+          `#include <common>\nuniform float uRim;`
+        ).replace(
+          '#include <lights_fragment_end>',
+          `#include <lights_fragment_end>\n{
+            vec3 V = normalize(vViewPosition);
+            float fres = pow(1.0 - max(dot(normal, -V), 0.0), 3.0);
+            diffuseColor.rgb += fres * uRim * 0.8;\n}
+          `
+        );
+      };
+      const planet = new THREE.Mesh(new THREE.SphereGeometry(size, 64, 64), material);
+      planet.rotation.z = tilt;
+
+      const orbitRingGeo = new THREE.RingGeometry(distance - 0.04, distance + 0.04, 256);
+      const orbitRingMat = new THREE.MeshBasicMaterial({ color: 0x475569, side: THREE.DoubleSide, transparent: true, opacity: 0.22 });
+      const orbitRing = new THREE.Mesh(orbitRingGeo, orbitRingMat);
+      orbitRing.rotation.x = Math.PI / 2;
+      scene.add(orbitRing);
 
       group.add(planet);
       scene.add(group);
-      return { group, planet, speed, distance, pivot };
+      return { name, group, planet, speed, distance, size };
     }
 
-    // Planets
-    const mercury = createPlanet(1.2, 0x9aa0a6, 24, 0.02);
-    const venus = createPlanet(2.6, 0xeab676, 32, 0.015);
-    const earth = createPlanet(2.8, 0x60a5fa, 42, 0.012);
-    const mars = createPlanet(2.0, 0xf87171, 52, 0.010);
-    const jupiter = createPlanet(8.0, 0xf59e0b, 72, 0.006);
-    const saturn = createPlanet(6.5, 0xfcd34d, 92, 0.005);
-    const uranus = createPlanet(4.0, 0x93c5fd, 110, 0.004);
-    const neptune = createPlanet(3.8, 0x60a5fa, 126, 0.0035);
+    // Planets (artistically exaggerated for readability)
+    const mercury = createPlanet('mercury', 1.6, 0x9aa0a6, 22, 0.02, 0.01, 0.12);
+    const venus   = createPlanet('venus',   3.2, 0xeab676, 30, 0.015, 0.03, 0.14);
+    const earth   = createPlanet('earth',   3.4, 0x5aa7ff, 38, 0.012, 0.41, 0.16);
+    const mars    = createPlanet('mars',    2.4, 0xf87171, 46, 0.010, 0.44, 0.14);
+    const jupiter = createPlanet('jupiter',10.0, 0xf59e0b, 60, 0.006, 0.05, 0.12);
+    const saturn  = createPlanet('saturn',  9.0, 0xfcd34d, 78, 0.005, 0.10, 0.12);
+    const uranus  = createPlanet('uranus',  5.0, 0x93c5fd, 92, 0.004, 0.15, 0.10);
+    const neptune = createPlanet('neptune', 4.8, 0x60a5fa,106, 0.0035,0.18, 0.10);
 
     // Saturn rings
     const saturnRings = new THREE.Mesh(
-      new THREE.RingGeometry(9.5, 13.5, 128),
-      new THREE.MeshBasicMaterial({ color: 0xf5deb3, side: THREE.DoubleSide, transparent: true, opacity: 0.35 })
+      new THREE.RingGeometry(saturn.size * 1.4, saturn.size * 2.0, 128),
+      new THREE.MeshBasicMaterial({ color: 0xf5deb3, side: THREE.DoubleSide, transparent: true, opacity: 0.42 })
     );
     saturnRings.rotation.x = Math.PI / 2.3;
-    saturnRings.position.x = saturn.distance;
-    scene.add(saturnRings);
+    saturn.group.add(saturnRings);
 
     // Earth moon
-    const moon = new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 32), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.8 }));
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(1.0, 32, 32), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 }));
     const moonPivot = new THREE.Object3D();
-    moonPivot.position.x = earth.distance;
-    moon.position.x = 5;
-    scene.add(moonPivot);
+    moon.position.x = 5.4;
+    earth.group.add(moonPivot);
     moonPivot.add(moon);
 
     // Camera subtle parallax
@@ -310,9 +322,8 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
       });
 
       // Moon orbit
-      const moonAngle = t * 0.65;
+      const moonAngle = t * 0.9;
       moonPivot.rotation.y = moonAngle;
-      moon.position.x = 5;
 
       // Shooting stars spawn/update
       shootTimer -= dt;
