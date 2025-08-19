@@ -43,7 +43,7 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.3;
     renderer.domElement.style.position = 'absolute';
     renderer.domElement.style.inset = '0';
     renderer.domElement.style.width = '100%';
@@ -55,8 +55,8 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 2000);
     camera.position.set(0, 30, 140);
 
-    // Post atmosphere fog
-    scene.fog = new THREE.FogExp2(0x04060a, 0.002);
+    // No fog for a brighter look
+    scene.fog = null as any;
 
     // Stars background (shader-based twinkle)
     const qualityToStars: Record<Quality, number> = { low: 1200, medium: 2400, high: 4000, ultra: 7000 };
@@ -109,7 +109,7 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
           vec2 uv = gl_PointCoord - 0.5; 
           float d = 1.0 - smoothstep(0.15, 0.5, length(uv));
           vec3 color = mix(vec3(0.58,0.67,1.0), vec3(0.92,0.96,1.0), vTw);
-          gl_FragColor = vec4(color, d * (0.65 + 0.35*vTw));
+          gl_FragColor = vec4(color, d * (0.85 + 0.15*vTw));
         }
       `
     });
@@ -151,13 +151,13 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
     const renderPass = new RenderPass(scene, camera);
     composer.addPass(renderPass);
 
-    const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), intensity, 0.9, 0.85);
-    bloom.threshold = 0.8;
+    const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), Math.max(0.25, intensity - 0.1), 0.9, 0.85);
+    bloom.threshold = 0.9;
     composer.addPass(bloom);
 
     // Vignette shader pass
     const vignetteShader = {
-      uniforms: { tDiffuse: { value: null }, offset: { value: 0.95 }, darkness: { value: 0.8 } },
+      uniforms: { tDiffuse: { value: null }, offset: { value: 1.2 }, darkness: { value: 0.2 } },
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
       fragmentShader: `uniform sampler2D tDiffuse; uniform float offset; uniform float darkness; varying vec2 vUv; void main(){ vec4 texel = texture2D(tDiffuse, vUv); vec2 uv = (vUv - 0.5) * vec2(offset); float vig = smoothstep(0.8, 0.0, dot(uv, uv)); gl_FragColor = vec4(texel.rgb * mix(1.0, vig, darkness), texel.a); }`
     };
