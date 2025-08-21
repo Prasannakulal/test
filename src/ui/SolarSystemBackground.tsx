@@ -1,49 +1,22 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 type Sizes = { width: number; height: number; };
 
-type Quality = 'low' | 'medium' | 'high' | 'ultra';
-
-export type SolarSystemBackgroundApi = {
-  start: () => void;
-  pause: () => void;
-  setIntensity: (level: number) => void;
-  setParallax: (enabled: boolean) => void;
-};
-
-type Props = {
-  quality?: Quality;
-  reducedMotion?: boolean;
-  intensity?: number;
-  parallax?: boolean;
-  onReady?: (api: SolarSystemBackgroundApi) => void;
-};
-
-export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>((props, ref) => {
-  const { quality = 'high', reducedMotion, intensity = 0.45, parallax = true, onReady } = props;
+export const SolarSystemBackground: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const runningRef = useRef<boolean>(true);
-  const parallaxRef = useRef<boolean>(parallax);
 
   useEffect(() => {
     const container = containerRef.current!;
 
     // Renderer
-    const isMobile = window.matchMedia('(max-width: 800px)').matches;
-    const devicePR = window.devicePixelRatio || 1;
-    const prCap = isMobile ? 1.5 : 2;
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(devicePR, prCap));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.3;
+    renderer.toneMappingExposure = 1.1;
     renderer.domElement.style.position = 'absolute';
     renderer.domElement.style.inset = '0';
     renderer.domElement.style.width = '100%';
@@ -55,64 +28,26 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 2000);
     camera.position.set(0, 30, 140);
 
-    // No fog for a brighter look
-    scene.fog = null as any;
+    // Post atmosphere fog
+    scene.fog = new THREE.FogExp2(0x04060a, 0.002);
 
-    // Stars background (shader-based twinkle)
-    const qualityToStars: Record<Quality, number> = { low: 1200, medium: 2400, high: 4000, ultra: 7000 };
+    // Stars background
     const starGeo = new THREE.BufferGeometry();
-    const starCount = qualityToStars[quality];
-    const positions = new Float32Array(starCount * 3);
-    const sizes = new Float32Array(starCount);
-    const phases = new Float32Array(starCount);
+    const starCount = 4000;
+    const starPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount; i++) {
-      const r = THREE.MathUtils.randFloat(240, 1000);
+      const r = THREE.MathUtils.randFloat(200, 900);
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(THREE.MathUtils.randFloatSpread(2));
-      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      positions[i * 3 + 2] = r * Math.cos(phi);
-      sizes[i] = THREE.MathUtils.randFloat(0.6, 1.8);
-      phases[i] = Math.random() * Math.PI * 2;
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.sin(phi) * Math.sin(theta);
+      const z = r * Math.cos(phi);
+      starPositions[i * 3] = x;
+      starPositions[i * 3 + 1] = y;
+      starPositions[i * 3 + 2] = z;
     }
-    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    starGeo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
-    starGeo.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
-
-    const starUniforms = {
-      uTime: { value: 0 },
-      uPixelRatio: { value: Math.min(devicePR, prCap) },
-      uSize: { value: 3.0 },
-    };
-    const starMat = new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      uniforms: starUniforms,
-      vertexShader: `
-        uniform float uTime; 
-        uniform float uPixelRatio; 
-        uniform float uSize; 
-        attribute float aSize; 
-        attribute float aPhase; 
-        varying float vTw; 
-        void main(){
-          vTw = 0.6 + 0.4 * sin(uTime*0.8 + aPhase);
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = uSize * aSize * (300.0 / -mvPosition.z) * uPixelRatio; 
-          gl_Position = projectionMatrix * mvPosition; 
-        }
-      `,
-      fragmentShader: `
-        varying float vTw; 
-        void main(){
-          vec2 uv = gl_PointCoord - 0.5; 
-          float d = 1.0 - smoothstep(0.15, 0.5, length(uv));
-          vec3 color = mix(vec3(0.58,0.67,1.0), vec3(0.92,0.96,1.0), vTw);
-          gl_FragColor = vec4(color, d * (0.85 + 0.15*vTw));
-        }
-      `
-    });
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0x9fb3ff, size: 0.9, sizeAttenuation: true, transparent: true, opacity: 0.9 });
     const stars = new THREE.Points(starGeo, starMat);
     scene.add(stars);
 
@@ -146,83 +81,52 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
     keyLight.position.set(0, 0, 0);
     scene.add(keyLight);
 
-    // Post-processing
-    const composer = new EffectComposer(renderer);
-    const renderPass = new RenderPass(scene, camera);
-    composer.addPass(renderPass);
-
-    const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), Math.max(0.25, intensity - 0.1), 0.9, 0.85);
-    bloom.threshold = 0.9;
-    composer.addPass(bloom);
-
-    // Vignette shader pass
-    const vignetteShader = {
-      uniforms: { tDiffuse: { value: null }, offset: { value: 1.2 }, darkness: { value: 0.2 } },
-      vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-      fragmentShader: `uniform sampler2D tDiffuse; uniform float offset; uniform float darkness; varying vec2 vUv; void main(){ vec4 texel = texture2D(tDiffuse, vUv); vec2 uv = (vUv - 0.5) * vec2(offset); float vig = smoothstep(0.8, 0.0, dot(uv, uv)); gl_FragColor = vec4(texel.rgb * mix(1.0, vig, darkness), texel.a); }`
-    };
-    const vignette = new ShaderPass(vignetteShader as any);
-    composer.addPass(vignette);
-
-    // Ambient/hemisphere fill to lift shadows
-    const hemi = new THREE.HemisphereLight(0x6b7c93, 0x0d0f14, 0.35);
-    scene.add(hemi);
-
-    // Planet factory with subtle rim/fresnel for readability
-    function createPlanet(name: string, size: number, color: number, distance: number, speed: number, tilt = 0.02, rim = 0.18) {
+    // Planet factory
+    function createPlanet(size: number, color: number, distance: number, speed: number, tilt = 0.02) {
       const group = new THREE.Group();
-      const material = new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.02 });
-      material.onBeforeCompile = (shader) => {
-        shader.uniforms.uRim = { value: rim };
-        shader.fragmentShader = shader.fragmentShader.replace(
-          '#include <common>',
-          `#include <common>\nuniform float uRim;`
-        ).replace(
-          '#include <lights_fragment_end>',
-          `#include <lights_fragment_end>\n{
-            vec3 V = normalize(vViewPosition);
-            float fres = pow(1.0 - max(dot(normal, -V), 0.0), 3.0);
-            diffuseColor.rgb += fres * uRim * 0.8;\n}
-          `
-        );
-      };
-      const planet = new THREE.Mesh(new THREE.SphereGeometry(size, 64, 64), material);
+      const planet = new THREE.Mesh(
+        new THREE.SphereGeometry(size, 48, 48),
+        new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.0 })
+      );
       planet.rotation.z = tilt;
+      const pivot = new THREE.Object3D();
+      pivot.position.x = distance;
 
-      const orbitRingGeo = new THREE.RingGeometry(distance - 0.04, distance + 0.04, 256);
-      const orbitRingMat = new THREE.MeshBasicMaterial({ color: 0x475569, side: THREE.DoubleSide, transparent: true, opacity: 0.22 });
-      const orbitRing = new THREE.Mesh(orbitRingGeo, orbitRingMat);
-      orbitRing.rotation.x = Math.PI / 2;
-      scene.add(orbitRing);
+      const ringGeo = new THREE.RingGeometry(distance - 0.04, distance + 0.04, 256);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x334155, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      scene.add(ring);
 
       group.add(planet);
       scene.add(group);
-      return { name, group, planet, speed, distance, size };
+      return { group, planet, speed, distance, pivot };
     }
 
-    // Planets (artistically exaggerated for readability)
-    const mercury = createPlanet('mercury', 1.6, 0x9aa0a6, 22, 0.02, 0.01, 0.12);
-    const venus   = createPlanet('venus',   3.2, 0xeab676, 30, 0.015, 0.03, 0.14);
-    const earth   = createPlanet('earth',   3.4, 0x5aa7ff, 38, 0.012, 0.41, 0.16);
-    const mars    = createPlanet('mars',    2.4, 0xf87171, 46, 0.010, 0.44, 0.14);
-    const jupiter = createPlanet('jupiter',10.0, 0xf59e0b, 60, 0.006, 0.05, 0.12);
-    const saturn  = createPlanet('saturn',  9.0, 0xfcd34d, 78, 0.005, 0.10, 0.12);
-    const uranus  = createPlanet('uranus',  5.0, 0x93c5fd, 92, 0.004, 0.15, 0.10);
-    const neptune = createPlanet('neptune', 4.8, 0x60a5fa,106, 0.0035,0.18, 0.10);
+    // Planets
+    const mercury = createPlanet(1.2, 0x9aa0a6, 24, 0.02);
+    const venus = createPlanet(2.6, 0xeab676, 32, 0.015);
+    const earth = createPlanet(2.8, 0x60a5fa, 42, 0.012);
+    const mars = createPlanet(2.0, 0xf87171, 52, 0.010);
+    const jupiter = createPlanet(8.0, 0xf59e0b, 72, 0.006);
+    const saturn = createPlanet(6.5, 0xfcd34d, 92, 0.005);
+    const uranus = createPlanet(4.0, 0x93c5fd, 110, 0.004);
+    const neptune = createPlanet(3.8, 0x60a5fa, 126, 0.0035);
 
-    // Saturn rings
+    // Saturn planetary rings (attach to planet so they orbit together)
     const saturnRings = new THREE.Mesh(
-      new THREE.RingGeometry(saturn.size * 1.4, saturn.size * 2.0, 128),
-      new THREE.MeshBasicMaterial({ color: 0xf5deb3, side: THREE.DoubleSide, transparent: true, opacity: 0.42 })
+      new THREE.RingGeometry(9.5, 13.5, 128),
+      new THREE.MeshBasicMaterial({ color: 0xf5deb3, side: THREE.DoubleSide, transparent: true, opacity: 0.35 })
     );
     saturnRings.rotation.x = Math.PI / 2.3;
     saturn.group.add(saturnRings);
 
     // Earth moon
-    const moon = new THREE.Mesh(new THREE.SphereGeometry(1.0, 32, 32), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 }));
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 32), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.8 }));
     const moonPivot = new THREE.Object3D();
-    moon.position.x = 5.4;
-    earth.group.add(moonPivot);
+    moonPivot.position.x = earth.distance;
+    moon.position.x = 5;
+    scene.add(moonPivot);
     moonPivot.add(moon);
 
     // Camera subtle parallax
@@ -234,7 +138,6 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
     const onPointerMove = (e: PointerEvent) => {
       const nx = (e.clientX / window.innerWidth) * 2 - 1;
       const ny = (e.clientY / window.innerHeight) * 2 - 1;
-      if (!parallaxRef.current) return;
       targetOffsetX = nx * 8;
       targetOffsetY = -ny * 6;
     };
@@ -251,42 +154,44 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
       camera.aspect = sizes.width / sizes.height;
       camera.updateProjectionMatrix();
       renderer.setSize(sizes.width, sizes.height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, prCap));
-      composer.setSize(sizes.width, sizes.height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     };
     window.addEventListener('resize', onResize);
 
-    // Shooting stars
+    // Shooting stars (cinematic)
     const shootingGroup = new THREE.Group();
     scene.add(shootingGroup);
     const shootTexture = createRadialGradientTexture('#ffffff', '#60a5fa', 256);
+    const trailTexture = createTrailTexture(512, 64);
+
     function spawnShootingStar() {
-      const mat = new THREE.SpriteMaterial({ map: shootTexture, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.95, depthWrite: false });
-      const sprite = new THREE.Sprite(mat);
-      const scale = THREE.MathUtils.randFloat(6, 14);
-      sprite.scale.set(scale * 1.6, scale, 1);
-      // avoid screen center where hero text likely exists
-      const y = THREE.MathUtils.randFloat(60, 140) * (Math.random() > 0.5 ? 1 : -1);
-      sprite.position.set(THREE.MathUtils.randFloat(-220, -80), y, THREE.MathUtils.randFloat(-60, 60));
-      const velocity = new THREE.Vector3(THREE.MathUtils.randFloat(1.2, 2.4), -THREE.MathUtils.randFloat(0.4, 1.0), 0);
-      const trail = createTrail();
-      shootingGroup.add(sprite);
+      const headMaterial = new THREE.SpriteMaterial({ map: shootTexture, blending: THREE.AdditiveBlending, transparent: true, opacity: 1.0, depthWrite: false });
+      const head = new THREE.Sprite(headMaterial);
+      const headScale = THREE.MathUtils.randFloat(4.5, 7.5);
+      head.scale.set(headScale, headScale, 1);
+      // avoid center text zone: spawn from left edge and top/bottom bands
+      const yBand = (Math.random() > 0.5 ? THREE.MathUtils.randFloat(60, 140) : THREE.MathUtils.randFloat(-140, -60));
+      head.position.set(THREE.MathUtils.randFloat(-220, -100), yBand, THREE.MathUtils.randFloat(-40, 40));
+
+      const speed = THREE.MathUtils.randFloat(70, 110);
+      const velocity = new THREE.Vector3(THREE.MathUtils.randFloat(1.2, 2.0), -THREE.MathUtils.randFloat(0.5, 1.2), 0).normalize().multiplyScalar(speed);
+
+      const length = THREE.MathUtils.randFloat(20, 38);
+      const width = THREE.MathUtils.randFloat(1.2, 2.2);
+      const trailMat = new THREE.MeshBasicMaterial({ map: trailTexture, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.95, depthWrite: false, color: 0x9fc5ff, side: THREE.DoubleSide });
+      const trail = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), trailMat);
+      trail.scale.set(length, width, 1);
+
+      shootingGroup.add(head);
       shootingGroup.add(trail);
-      return { sprite, velocity, trail, life: THREE.MathUtils.randFloat(1.4, 2.2) };
+
+      const maxLife = THREE.MathUtils.randFloat(1.6, 2.4);
+      return { head, velocity, trail, elapsed: 0, maxLife, length, width };
     }
 
-    function createTrail() {
-      const geometry = new THREE.BufferGeometry();
-      const vertices = new Float32Array([0, 0, 0, -12, 4, 0, -24, 8, 0]);
-      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-      const material = new THREE.LineBasicMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.8 });
-      const line = new THREE.Line(geometry, material);
-      return line;
-    }
-
-    const activeShoots: Array<{ sprite: THREE.Sprite; velocity: THREE.Vector3; trail: THREE.Line; life: number; }> = [];
-    // Poisson process: next event in [8s, 15s]
-    let shootTimer = THREE.MathUtils.randFloat(8, 15);
+    const activeShoots: Array<{ head: THREE.Sprite; velocity: THREE.Vector3; trail: THREE.Mesh; elapsed: number; maxLife: number; length: number; width: number; }> = [];
+    // Poisson gap to keep rarity and taste
+    let shootTimer = THREE.MathUtils.randFloat(9, 16);
 
     // Animate
     const clock = new THREE.Clock();
@@ -301,8 +206,7 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
       camera.lookAt(0, 0, 0);
 
       // Rotate starfield and nebulae gently
-      (starMat.uniforms as any).uTime.value += dt;
-      stars.rotation.y += 0.0006;
+      stars.rotation.y += 0.0008;
       nebulaGroup.rotation.z += 0.0004;
 
       // Orbits
@@ -318,39 +222,56 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
 
       // Self-rotation
       [mercury, venus, earth, mars, jupiter, saturn, uranus, neptune].forEach(p => {
-        p.group.children.forEach(child => { child.rotation.y += 0.005; });
+        p.group.children.forEach((child: THREE.Object3D) => { child.rotation.y += 0.005; });
       });
 
       // Moon orbit
-      const moonAngle = t * 0.9;
+      const moonAngle = t * 0.65;
       moonPivot.rotation.y = moonAngle;
+      moon.position.x = 5;
 
-      // Shooting stars spawn/update
+      // Shooting stars spawn/update (eased, oriented trails)
       shootTimer -= dt;
-      if (shootTimer <= 0 && activeShoots.length < 2) {
+      if (shootTimer <= 0 && activeShoots.length < 1) {
         activeShoots.push(spawnShootingStar());
-        shootTimer = THREE.MathUtils.randFloat(8, 15);
+        shootTimer = THREE.MathUtils.randFloat(9, 16);
       }
       for (let i = activeShoots.length - 1; i >= 0; i--) {
         const s = activeShoots[i];
-        s.life -= dt;
-        s.sprite.position.addScaledVector(s.velocity, 60 * dt);
-        s.trail.position.copy(s.sprite.position);
-        (s.sprite.material as THREE.SpriteMaterial).opacity = Math.max(0, Math.min(1, s.life));
-        if (s.life <= 0 || s.sprite.position.x > 220) {
-          shootingGroup.remove(s.sprite);
+        s.elapsed += dt;
+        const tnorm = s.elapsed / s.maxLife;
+        // easing alpha in/out
+        const easeOutSine = (x: number) => Math.sin((x * Math.PI) / 2);
+        const easeInSine = (x: number) => 1 - Math.cos((x * Math.PI) / 2);
+        let alpha = 1;
+        if (tnorm < 0.2) alpha = easeOutSine(tnorm / 0.2);
+        else if (tnorm > 0.8) alpha = easeInSine((1 - tnorm) / 0.2);
+
+        // motion & slight deceleration
+        s.head.position.addScaledVector(s.velocity, dt);
+        s.velocity.multiplyScalar(0.998);
+
+        // orient trail with velocity and offset behind head
+        const angle = Math.atan2(s.velocity.y, s.velocity.x);
+        s.trail.rotation.z = angle;
+        s.trail.position.copy(s.head.position);
+        const back = s.length * 0.48;
+        const dir = s.velocity.clone().normalize();
+        s.trail.position.addScaledVector(dir, -back);
+
+        (s.head.material as THREE.SpriteMaterial).opacity = alpha;
+        (s.trail.material as THREE.MeshBasicMaterial).opacity = 0.85 * alpha;
+
+        if (tnorm >= 1 || s.head.position.x > 260 || s.head.position.y < -200) {
+          shootingGroup.remove(s.head);
           shootingGroup.remove(s.trail);
           activeShoots.splice(i, 1);
         }
       }
 
-      composer.render();
-      rafRef.current = runningRef.current ? requestAnimationFrame(animate) : null;
+      renderer.render(scene, camera);
+      rafRef.current = requestAnimationFrame(animate);
     };
-    const prefersReduced = reducedMotion ?? window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) {
-      parallaxRef.current = false;
-    }
     rafRef.current = requestAnimationFrame(animate);
 
     return () => {
@@ -360,46 +281,24 @@ export const SolarSystemBackground = forwardRef<SolarSystemBackgroundApi, Props>
       window.removeEventListener('pointermove', onPointerMove);
       renderer.dispose();
       container.removeChild(renderer.domElement);
-      scene.traverse(obj => {
+      scene.traverse((obj: THREE.Object3D) => {
         if ((obj as THREE.Mesh).isMesh) {
           const mesh = obj as THREE.Mesh;
           mesh.geometry.dispose();
           if (Array.isArray(mesh.material)) {
-            mesh.material.forEach(m => m.dispose());
+            mesh.material.forEach((m: THREE.Material) => m.dispose());
           } else {
             (mesh.material as THREE.Material)?.dispose();
           }
         }
       });
     };
-  }, [quality, reducedMotion, intensity]);
-
-  // imperative API
-  useImperativeHandle(ref, (): SolarSystemBackgroundApi => ({
-    start: () => {
-      if (!runningRef.current) {
-        runningRef.current = true;
-        rafRef.current = requestAnimationFrame(() => {});
-      }
-    },
-    pause: () => {
-      runningRef.current = false;
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    },
-    setIntensity: (_level: number) => {
-      // Runtime tuning via dataset attribute (picked up next mount)
-      const node = containerRef.current;
-      if (node) node.dataset['bloom'] = String(_level);
-    },
-    setParallax: (enabled: boolean) => {
-      parallaxRef.current = !!enabled;
-    },
-  }), []);
+  }, []);
 
   return (
     <div ref={containerRef} className="solar-bg" aria-hidden="true" />
   );
-});
+};
 
 function createRadialGradientTexture(innerHex: string, outerHex: string, size: number) {
   const canvas = document.createElement('canvas');
@@ -412,6 +311,35 @@ function createRadialGradientTexture(innerHex: string, outerHex: string, size: n
   ctx.fillRect(0, 0, size, size);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function createTrailTexture(width: number, height: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  const grd = ctx.createLinearGradient(0, height/2, width, height/2);
+  grd.addColorStop(0.0, 'rgba(159,197,255,0)');
+  grd.addColorStop(0.1, 'rgba(159,197,255,0.25)');
+  grd.addColorStop(0.4, 'rgba(159,197,255,0.9)');
+  grd.addColorStop(1.0, 'rgba(159,197,255,0)');
+
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, width, height);
+
+  // Soft vertical fade for feathered edges
+  const fade = ctx.createLinearGradient(0, 0, 0, height);
+  fade.addColorStop(0, 'rgba(255,255,255,0)');
+  fade.addColorStop(0.5, 'rgba(255,255,255,1)');
+  fade.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, width, height);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
   return texture;
 }
 
