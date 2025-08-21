@@ -3,5 +3,8 @@
 	"outputDirectory": "dist",
 	"framework": "vite",
 	"cleanUrls": true,
-	"trailingSlash": false
+	"trailingSlash": false,
+	"functions": {
+		"api/**/*": { "runtime": "@vercel/node@2" }
+	}
 }

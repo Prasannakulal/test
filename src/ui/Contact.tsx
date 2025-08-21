@@ -31,24 +31,53 @@ export const Contact: React.FC = () => (
         </div>
       </div>
       <div className="reveal">
-        <form className="card contact-form" action="https://formspree.io/f/your-id" method="POST">
-          <label>
-            <span>Name</span>
-            <input type="text" name="name" placeholder="Your name" required />
-          </label>
-          <label>
-            <span>Email</span>
-            <input type="email" name="email" placeholder="you@example.com" required />
-          </label>
-          <label>
-            <span>Message</span>
-            <textarea name="message" rows={5} placeholder="How can I help?" required />
-          </label>
-          <button className="btn primary" type="submit">Send</button>
-        </form>
+        <ContactForm />
       </div>
     </div>
   </section>
 );
+
+const ContactForm: React.FC = () => {
+  const [state, setState] = React.useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+    setState('sending');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setState('sent');
+      form.reset();
+    } catch (err) {
+      setState('error');
+    }
+  };
+  return (
+    <form className="card contact-form" onSubmit={onSubmit}>
+      <label>
+        <span>Name</span>
+        <input type="text" name="name" placeholder="Your name" required />
+      </label>
+      <label>
+        <span>Email</span>
+        <input type="email" name="email" placeholder="you@example.com" required />
+      </label>
+      <label>
+        <span>Message</span>
+        <textarea name="message" rows={5} placeholder="How can I help?" required />
+      </label>
+      <button className="btn primary" type="submit" disabled={state==='sending'}>
+        {state === 'sending' ? 'Sending…' : state === 'sent' ? 'Sent ✓' : 'Send'}
+      </button>
+      {state === 'error' && <p style={{ color: '#f87171', marginTop: 8 }}>Could not send. Please email me directly.</p>}
+    </form>
+  );
+};
 
 
