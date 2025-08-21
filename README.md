@@ -3,7 +3,7 @@
 A professional portfolio with a cinematic 4K solar‑system background (Three.js) and React UI. Includes parallax motion, immersive starfield, tasteful shooting stars, and a contact form that emails via a serverless function.
 
 ### Live Demo
-Add your deployed URL here after deployment (e.g., Vercel):
+
 - Live: https://your-project-url.vercel.app
 
 ### Features
