@@ -26,7 +26,14 @@ export const SolarSystemBackground: React.FC = () => {
     // Scene & Camera
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 2000);
-    camera.position.set(0, 30, 140);
+    
+    // Mobile-responsive camera positioning
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      camera.position.set(0, 20, 80); // Closer and lower for mobile
+    } else {
+      camera.position.set(0, 30, 140); // Original desktop position
+    }
 
     // Post atmosphere fog
     scene.fog = new THREE.FogExp2(0x04060a, 0.002);
@@ -103,15 +110,17 @@ export const SolarSystemBackground: React.FC = () => {
       return { group, planet, speed, distance, pivot };
     }
 
-    // Planets
-    const mercury = createPlanet(1.2, 0x9aa0a6, 24, 0.02);
-    const venus = createPlanet(2.6, 0xeab676, 32, 0.015);
-    const earth = createPlanet(2.8, 0x60a5fa, 42, 0.012);
-    const mars = createPlanet(2.0, 0xf87171, 52, 0.010);
-    const jupiter = createPlanet(8.0, 0xf59e0b, 72, 0.006);
-    const saturn = createPlanet(6.5, 0xfcd34d, 92, 0.005);
-    const uranus = createPlanet(4.0, 0x93c5fd, 110, 0.004);
-    const neptune = createPlanet(3.8, 0x60a5fa, 126, 0.0035);
+    // Planets with mobile-responsive distances
+    const mobileScale = isMobile ? 0.6 : 1; // Scale down distances on mobile
+    
+    const mercury = createPlanet(1.2, 0x9aa0a6, 24 * mobileScale, 0.02);
+    const venus = createPlanet(2.6, 0xeab676, 32 * mobileScale, 0.015);
+    const earth = createPlanet(2.8, 0x60a5fa, 42 * mobileScale, 0.012);
+    const mars = createPlanet(2.0, 0xf87171, 52 * mobileScale, 0.010);
+    const jupiter = createPlanet(8.0, 0xf59e0b, 72 * mobileScale, 0.006);
+    const saturn = createPlanet(6.5, 0xfcd34d, 92 * mobileScale, 0.005);
+    const uranus = createPlanet(4.0, 0x93c5fd, 110 * mobileScale, 0.004);
+    const neptune = createPlanet(3.8, 0x60a5fa, 126 * mobileScale, 0.0035);
 
     // Saturn planetary rings (attach to planet so they orbit together)
     const saturnRings = new THREE.Mesh(
@@ -151,7 +160,17 @@ export const SolarSystemBackground: React.FC = () => {
     // Resize handler
     const onResize = () => {
       const sizes: Sizes = { width: window.innerWidth, height: window.innerHeight };
+      const isMobileNow = sizes.width <= 768;
+      
       camera.aspect = sizes.width / sizes.height;
+      
+      // Update camera position for mobile/desktop
+      if (isMobileNow) {
+        camera.position.set(0, 20, 80);
+      } else {
+        camera.position.set(0, 30, 140);
+      }
+      
       camera.updateProjectionMatrix();
       renderer.setSize(sizes.width, sizes.height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -201,8 +220,14 @@ export const SolarSystemBackground: React.FC = () => {
       // Smooth pointer parallax
       currentOffsetX += (targetOffsetX - currentOffsetX) * 0.05;
       currentOffsetY += (targetOffsetY - currentOffsetY) * 0.05;
-      camera.position.x = currentOffsetX;
-      camera.position.y = 30 + currentOffsetY + (scrollY * 0.01);
+      
+      // Mobile-responsive camera positioning
+      const isMobileNow = window.innerWidth <= 768;
+      const baseY = isMobileNow ? 20 : 30;
+      const parallaxScale = isMobileNow ? 0.5 : 1;
+      
+      camera.position.x = currentOffsetX * parallaxScale;
+      camera.position.y = baseY + (currentOffsetY * parallaxScale) + (scrollY * 0.01);
       camera.lookAt(0, 0, 0);
 
       // Rotate starfield and nebulae gently
