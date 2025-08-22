@@ -25,7 +25,7 @@ export const Header: React.FC = () => {
   return (
     <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
       <div className={`container nav ${open ? 'open' : ''}`}>
-        <a className="brand" href="#home" aria-label="Go to home">PK</a>
+        <a className="brand" href="#home" aria-label="Go to home">PrasKulal</a>
         <nav className="nav-links" aria-label="Primary Navigation">
           <a href="#home">Home</a>
           <a href="#about">About</a>
