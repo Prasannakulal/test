@@ -73,14 +73,16 @@ export const SolarSystemBackground: React.FC = () => {
 
     // Sun with glow
     const sunGroup = new THREE.Group();
-    const sunGeo = new THREE.SphereGeometry(14, 64, 64);
+    const sunSize = isMobile ? 10 : 14; // Smaller sun on mobile
+    const sunGeo = new THREE.SphereGeometry(sunSize, 64, 64);
     const sunMat = new THREE.MeshBasicMaterial({ color: 0xffc107 });
     const sun = new THREE.Mesh(sunGeo, sunMat);
     sunGroup.add(sun);
 
     const sunGlowTex = createRadialGradientTexture('#ffd54f', '#ff6d00', 1024);
     const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: sunGlowTex, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.55, depthWrite: false, color: 0xffffff }));
-    sunGlow.scale.set(120, 120, 1);
+    const glowSize = isMobile ? 80 : 120; // Smaller glow on mobile
+    sunGlow.scale.set(glowSize, glowSize, 1);
     sunGroup.add(sunGlow);
     scene.add(sunGroup);
 
@@ -110,17 +112,18 @@ export const SolarSystemBackground: React.FC = () => {
       return { group, planet, speed, distance, pivot };
     }
 
-    // Planets with mobile-responsive distances
+    // Planets with mobile-responsive distances and sizes
     const mobileScale = isMobile ? 0.6 : 1; // Scale down distances on mobile
+    const mobileSizeScale = isMobile ? 0.7 : 1; // Scale down planet sizes on mobile
     
-    const mercury = createPlanet(1.2, 0x9aa0a6, 24 * mobileScale, 0.02);
-    const venus = createPlanet(2.6, 0xeab676, 32 * mobileScale, 0.015);
-    const earth = createPlanet(2.8, 0x60a5fa, 42 * mobileScale, 0.012);
-    const mars = createPlanet(2.0, 0xf87171, 52 * mobileScale, 0.010);
-    const jupiter = createPlanet(8.0, 0xf59e0b, 72 * mobileScale, 0.006);
-    const saturn = createPlanet(6.5, 0xfcd34d, 92 * mobileScale, 0.005);
-    const uranus = createPlanet(4.0, 0x93c5fd, 110 * mobileScale, 0.004);
-    const neptune = createPlanet(3.8, 0x60a5fa, 126 * mobileScale, 0.0035);
+    const mercury = createPlanet(1.2 * mobileSizeScale, 0x9aa0a6, 24 * mobileScale, 0.02);
+    const venus = createPlanet(2.6 * mobileSizeScale, 0xeab676, 32 * mobileScale, 0.015);
+    const earth = createPlanet(2.8 * mobileSizeScale, 0x60a5fa, 42 * mobileScale, 0.012);
+    const mars = createPlanet(2.0 * mobileSizeScale, 0xf87171, 52 * mobileScale, 0.010);
+    const jupiter = createPlanet(8.0 * mobileSizeScale, 0xf59e0b, 72 * mobileScale, 0.006);
+    const saturn = createPlanet(6.5 * mobileSizeScale, 0xfcd34d, 92 * mobileScale, 0.005);
+    const uranus = createPlanet(4.0 * mobileSizeScale, 0x93c5fd, 110 * mobileScale, 0.004);
+    const neptune = createPlanet(3.8 * mobileSizeScale, 0x60a5fa, 126 * mobileScale, 0.0035);
 
     // Saturn planetary rings (attach to planet so they orbit together)
     const saturnRings = new THREE.Mesh(
@@ -131,10 +134,12 @@ export const SolarSystemBackground: React.FC = () => {
     saturn.group.add(saturnRings);
 
     // Earth moon
-    const moon = new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 32), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.8 }));
+    const moonSize = isMobile ? 0.6 : 0.9; // Smaller moon on mobile
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(moonSize, 32, 32), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.8 }));
     const moonPivot = new THREE.Object3D();
     moonPivot.position.x = earth.distance;
-    moon.position.x = 5;
+    const moonDistance = isMobile ? 3 : 5; // Closer moon on mobile
+    moon.position.x = moonDistance;
     scene.add(moonPivot);
     moonPivot.add(moon);
 
@@ -253,7 +258,7 @@ export const SolarSystemBackground: React.FC = () => {
       // Moon orbit
       const moonAngle = t * 0.65;
       moonPivot.rotation.y = moonAngle;
-      moon.position.x = 5;
+      moon.position.x = moonDistance;
 
       // Shooting stars spawn/update (eased, oriented trails)
       shootTimer -= dt;
