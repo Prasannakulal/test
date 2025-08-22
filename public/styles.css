@@ -23,18 +23,7 @@
   --section-gap: 80px;
 }
 
-/* Light theme overrides */
-[data-theme="light"] {
-  --bg: #ffffff;
-  --panel: #f6f7fb;
-  --card: #ffffff;
-  --text: #0f1320;
-  --muted: #4b5566;
-  --border: #e5e7f0;
-  --primary: #5b47ff;
-  --primary-600: #4e38ff;
-  --accent: #16a34a;
-}
+
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }

@@ -4,11 +4,20 @@ export const Hero: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [currentText, setCurrentText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
 
   const fullText = "Full Stack Developer • MERN Stack • AI/ML Engineer";
 
   useEffect(() => {
+    // Check if device is mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
     setIsVisible(true);
     
     // Professional typewriter effect
@@ -21,7 +30,10 @@ export const Hero: React.FC = () => {
       }
     }, 80);
 
-    return () => clearInterval(typewriter);
+    return () => {
+      clearInterval(typewriter);
+      window.removeEventListener('resize', checkMobile);
+    };
   }, [currentIndex, fullText.length]);
 
   return (
@@ -30,10 +42,19 @@ export const Hero: React.FC = () => {
       className="cinematic-hero professional-hero" 
       id="home"
     >
-      {/* Video background */}
-      <video className="bg-video" playsInline autoPlay muted loop>
-        <source src="/cinematic.mp4" type="video/mp4" />
-      </video>
+      {/* Video background - hidden on mobile */}
+      {!isMobile && (
+        <video 
+          className="bg-video" 
+          playsInline 
+          autoPlay 
+          muted 
+          loop
+          preload="auto"
+        >
+          <source src="/cinematic.mp4" type="video/mp4" />
+        </video>
+      )}
       
       {/* Professional overlay */}
       <div className="overlay professional-overlay" />
@@ -66,7 +87,7 @@ export const Hero: React.FC = () => {
             <span className="btn-icon">→</span>
           </a>
           <a className="btn outline professional-btn" href="/PrasannaKulal_Resume_ (23).pdf" download="Prasanna_Kulal_Resume.pdf">
-            <span className="btn-text">Download Résumé</span>
+            <span className="btn-text">Download Resume</span>
             <span className="btn-icon">↓</span>
           </a>
         </div>
