@@ -7,6 +7,11 @@ export const Projects: React.FC = () => {
 
   useEffect(() => {
     const checkCollisionWithSun = () => {
+      // Disable collision detection on mobile devices
+      if (window.innerWidth <= 768) {
+        return;
+      }
+
       const sunCenterX = window.innerWidth * 0.6; // Sun is positioned at 60% of screen width
       const sunCenterY = window.innerHeight * 0.4; // Sun is positioned at 40% of screen height
       const sunRadius = 80; // Approximate sun radius in pixels
