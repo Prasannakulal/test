@@ -19,11 +19,54 @@
 .scroll-indicator { position: absolute; bottom: 24px; color: #aaa; letter-spacing: .3em; text-transform: uppercase; font-size: 12px; }
 
 /* Cinematic cards */
-.cinematic-projects .cinematic-card { backdrop-filter: blur(6px); background: linear-gradient( to bottom right, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.08); box-shadow: 0 20px 60px rgba(0,0,0,.35); transition: transform .35s ease, box-shadow .35s ease; border-radius: 20px; }
+.cinematic-projects .cinematic-card { 
+  backdrop-filter: blur(6px); 
+  background: linear-gradient( to bottom right, rgba(255,255,255,.06), rgba(255,255,255,.02)); 
+  border: 1px solid rgba(255,255,255,.08); 
+  box-shadow: 0 20px 60px rgba(0,0,0,.35); 
+  transition: transform .35s ease, box-shadow .35s ease; 
+  border-radius: 20px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
 .cinematic-projects .cinematic-card:hover { transform: translateY(-6px); box-shadow: 0 30px 80px rgba(0,0,0,.5); }
-.cinematic-projects .project-thumb { position: relative; height: 180px; border-radius: 16px; overflow: hidden; background-image: linear-gradient(135deg, color-mix(in oklab, var(--accent) 50%, #0000), color-mix(in oklab, var(--primary) 50%, #0000)); background-attachment: scroll; }
-.cinematic-projects .project-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: .8; border-radius: inherit; }
-.parallax { transform: translateZ(0); will-change: transform; }
+.cinematic-projects .project-thumb { 
+  position: relative; 
+  height: 180px; 
+  border-radius: 16px; 
+  overflow: hidden; 
+  background-image: linear-gradient(135deg, color-mix(in oklab, var(--accent) 50%, #0000), color-mix(in oklab, var(--primary) 50%, #0000)); 
+  background-attachment: scroll;
+  width: 100%;
+}
+.cinematic-projects .project-thumb img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+  display: block; 
+  opacity: .8; 
+  border-radius: inherit; 
+}
+
+/* Grid layout fixes */
+.cinematic-projects .grid.three {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 28px;
+  width: 100%;
+}
+
+.cinematic-projects .grid.three > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 960px) {
+  .cinematic-projects .grid.three {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* Full-screen 4K Three.js background layer */
 .solar-bg {
