@@ -27,10 +27,10 @@ export const SolarSystemBackground: React.FC = () => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 2000);
     
-    // Mobile-responsive camera positioning
+    // Mobile-responsive camera positioning - much further back to show all planets
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
-      camera.position.set(0, 20, 80); // Closer and lower for mobile
+      camera.position.set(0, 25, 200); // Much further back for mobile to show all planets
     } else {
       camera.position.set(0, 30, 140); // Original desktop position
     }
@@ -73,7 +73,7 @@ export const SolarSystemBackground: React.FC = () => {
 
     // Sun with glow
     const sunGroup = new THREE.Group();
-    const sunSize = isMobile ? 10 : 14; // Smaller sun on mobile
+    const sunSize = 14; // Original desktop sun size
     const sunGeo = new THREE.SphereGeometry(sunSize, 64, 64);
     const sunMat = new THREE.MeshBasicMaterial({ color: 0xffc107 });
     const sun = new THREE.Mesh(sunGeo, sunMat);
@@ -81,7 +81,7 @@ export const SolarSystemBackground: React.FC = () => {
 
     const sunGlowTex = createRadialGradientTexture('#ffd54f', '#ff6d00', 1024);
     const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: sunGlowTex, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.55, depthWrite: false, color: 0xffffff }));
-    const glowSize = isMobile ? 80 : 120; // Smaller glow on mobile
+    const glowSize = 120; // Original desktop glow size
     sunGlow.scale.set(glowSize, glowSize, 1);
     sunGroup.add(sunGlow);
     scene.add(sunGroup);
@@ -112,18 +112,15 @@ export const SolarSystemBackground: React.FC = () => {
       return { group, planet, speed, distance, pivot };
     }
 
-    // Planets with mobile-responsive distances and sizes
-    const mobileScale = isMobile ? 0.6 : 1; // Scale down distances on mobile
-    const mobileSizeScale = isMobile ? 0.7 : 1; // Scale down planet sizes on mobile
-    
-    const mercury = createPlanet(1.2 * mobileSizeScale, 0x9aa0a6, 24 * mobileScale, 0.02);
-    const venus = createPlanet(2.6 * mobileSizeScale, 0xeab676, 32 * mobileScale, 0.015);
-    const earth = createPlanet(2.8 * mobileSizeScale, 0x60a5fa, 42 * mobileScale, 0.012);
-    const mars = createPlanet(2.0 * mobileSizeScale, 0xf87171, 52 * mobileScale, 0.010);
-    const jupiter = createPlanet(8.0 * mobileSizeScale, 0xf59e0b, 72 * mobileScale, 0.006);
-    const saturn = createPlanet(6.5 * mobileSizeScale, 0xfcd34d, 92 * mobileScale, 0.005);
-    const uranus = createPlanet(4.0 * mobileSizeScale, 0x93c5fd, 110 * mobileScale, 0.004);
-    const neptune = createPlanet(3.8 * mobileSizeScale, 0x60a5fa, 126 * mobileScale, 0.0035);
+    // Planets with original distances and sizes
+    const mercury = createPlanet(1.2, 0x9aa0a6, 24, 0.02);
+    const venus = createPlanet(2.6, 0xeab676, 32, 0.015);
+    const earth = createPlanet(2.8, 0x60a5fa, 42, 0.012);
+    const mars = createPlanet(2.0, 0xf87171, 52, 0.010);
+    const jupiter = createPlanet(8.0, 0xf59e0b, 72, 0.006);
+    const saturn = createPlanet(6.5, 0xfcd34d, 92, 0.005);
+    const uranus = createPlanet(4.0, 0x93c5fd, 110, 0.004);
+    const neptune = createPlanet(3.8, 0x60a5fa, 126, 0.0035);
 
     // Saturn planetary rings (attach to planet so they orbit together)
     const saturnRings = new THREE.Mesh(
@@ -134,11 +131,11 @@ export const SolarSystemBackground: React.FC = () => {
     saturn.group.add(saturnRings);
 
     // Earth moon
-    const moonSize = isMobile ? 0.6 : 0.9; // Smaller moon on mobile
+    const moonSize = 0.9; // Original desktop moon size
     const moon = new THREE.Mesh(new THREE.SphereGeometry(moonSize, 32, 32), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.8 }));
     const moonPivot = new THREE.Object3D();
     moonPivot.position.x = earth.distance;
-    const moonDistance = isMobile ? 3 : 5; // Closer moon on mobile
+    const moonDistance = 5; // Original desktop moon distance
     moon.position.x = moonDistance;
     scene.add(moonPivot);
     moonPivot.add(moon);
@@ -171,9 +168,9 @@ export const SolarSystemBackground: React.FC = () => {
       
       // Update camera position for mobile/desktop
       if (isMobileNow) {
-        camera.position.set(0, 20, 80);
+        camera.position.set(0, 25, 200); // Much further back for mobile
       } else {
-        camera.position.set(0, 30, 140);
+        camera.position.set(0, 30, 140); // Original desktop position
       }
       
       camera.updateProjectionMatrix();
@@ -228,11 +225,13 @@ export const SolarSystemBackground: React.FC = () => {
       
       // Mobile-responsive camera positioning
       const isMobileNow = window.innerWidth <= 768;
-      const baseY = isMobileNow ? 20 : 30;
-      const parallaxScale = isMobileNow ? 0.5 : 1;
+      const baseY = isMobileNow ? 25 : 30;
+      const baseZ = isMobileNow ? 200 : 140;
+      const parallaxScale = isMobileNow ? 0.3 : 1; // Reduced parallax on mobile
       
       camera.position.x = currentOffsetX * parallaxScale;
       camera.position.y = baseY + (currentOffsetY * parallaxScale) + (scrollY * 0.01);
+      camera.position.z = baseZ;
       camera.lookAt(0, 0, 0);
 
       // Rotate starfield and nebulae gently
