@@ -75,23 +75,23 @@ export const SolarSystemBackground: React.FC = () => {
     const sunGroup = new THREE.Group();
     const sunSize = 14;
     
-    // Core sun sphere - bright white-yellow like real sun
+    // Core sun sphere - golden orange like real sun
     const sunGeo = new THREE.SphereGeometry(sunSize, 64, 64);
     const sunMat = new THREE.MeshBasicMaterial({ 
-      color: 0xffffcc, // Bright white-yellow like real sun
+      color: 0xffa500, // Golden orange color
       transparent: true,
-      opacity: 0.7
+      opacity: 0.6
     });
     const sun = new THREE.Mesh(sunGeo, sunMat);
     sunGroup.add(sun);
 
-    // Inner corona - bright white-yellow
-    const innerCoronaTex = createRadialGradientTexture('#ffffcc', '#ffcc66', 1024);
+    // Inner corona - golden orange
+    const innerCoronaTex = createRadialGradientTexture('#ffa500', '#ff8c00', 1024);
     const innerCorona = new THREE.Sprite(new THREE.SpriteMaterial({ 
       map: innerCoronaTex, 
       blending: THREE.AdditiveBlending, 
       transparent: true, 
-      opacity: 0.4, 
+      opacity: 0.25, 
       depthWrite: false, 
       color: 0xffffff 
     }));
@@ -99,25 +99,25 @@ export const SolarSystemBackground: React.FC = () => {
     sunGroup.add(innerCorona);
 
     // Middle corona - orange
-    const middleCoronaTex = createRadialGradientTexture('#ffcc66', '#ff9933', 1024);
+    const middleCoronaTex = createRadialGradientTexture('#ff8c00', '#ff6b35', 1024);
     const middleCorona = new THREE.Sprite(new THREE.SpriteMaterial({ 
       map: middleCoronaTex, 
       blending: THREE.AdditiveBlending, 
       transparent: true, 
-      opacity: 0.3, 
+      opacity: 0.2, 
       depthWrite: false, 
       color: 0xffffff 
     }));
     middleCorona.scale.set(140, 140, 1);
     sunGroup.add(middleCorona);
 
-    // Outer corona - red-orange like real sun
-    const outerCoronaTex = createRadialGradientTexture('#ff9933', '#ff6600', 1024);
+    // Outer corona - red-orange
+    const outerCoronaTex = createRadialGradientTexture('#ff6b35', '#ff4500', 1024);
     const outerCorona = new THREE.Sprite(new THREE.SpriteMaterial({ 
       map: outerCoronaTex, 
       blending: THREE.AdditiveBlending, 
       transparent: true, 
-      opacity: 0.2, 
+      opacity: 0.15, 
       depthWrite: false, 
       color: 0xffffff 
     }));
@@ -125,12 +125,12 @@ export const SolarSystemBackground: React.FC = () => {
     sunGroup.add(outerCorona);
 
     // Brightest center glow
-    const centerGlowTex = createRadialGradientTexture('#ffffff', '#ffffcc', 512);
+    const centerGlowTex = createRadialGradientTexture('#ffa500', '#ff8c00', 512);
     const centerGlow = new THREE.Sprite(new THREE.SpriteMaterial({ 
       map: centerGlowTex, 
       blending: THREE.AdditiveBlending, 
       transparent: true, 
-      opacity: 0.5, 
+      opacity: 0.35, 
       depthWrite: false, 
       color: 0xffffff 
     }));
