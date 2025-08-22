@@ -1,9 +1,4 @@
 import React from 'react';
-import OneclickOrderImg from '../assets/OneclickOrder.png';
-import PepperDiseaseImg from '../assets/PepperDisease.png';
-import CollegeDatabaseImg from '../assets/CollegeDatabase.png';
-import BagroundRemovalImg from '../assets/BagroundRemoval.png';
-import GenclImg from '../assets/Gencl.png';
 
 export const Projects: React.FC = () => (
   <section className="section cinematic-projects" id="projects">
@@ -15,7 +10,7 @@ export const Projects: React.FC = () => (
             title: 'GenCl — AI‑Powered Chat Platform',
             desc: 'React + Node.js chat app with LLM integrations (Gemini 1.5 Pro, DeepSeek), dynamic model switching, markdown rendering, and CI/CD (Netlify + Render).',
             tags: ['React','Node.js','LLM','REST','Context API','Netlify','Render'],
-            img: GenclImg,
+            img: '/Gencl.png',
             live: 'https://gencl.netlify.app/',
             code: 'https://github.com/Prasannakulal/GenCl-AI-Powered-Chat-Platform'
           },
@@ -23,7 +18,7 @@ export const Projects: React.FC = () => (
             title: 'Background Removal',
             desc: 'Automatic image background removal with segmentation and clean edge matting.',
             tags: ['Computer Vision','Python','Segmentation'],
-            img: BagroundRemovalImg,
+            img: '/BagroundRemoval.png',
             live: 'https://bgremover-lime.vercel.app/',
             code: 'https://github.com/Prasannakulal/bg-frontend'
           },
@@ -31,7 +26,7 @@ export const Projects: React.FC = () => (
             title: 'OneClickOrder',
             desc: 'MERN full‑stack parcel ordering and tracking with responsive UI and optimized API performance.',
             tags: ['MongoDB','Express.js','React','Node.js','Bootstrap','Postman'],
-            img: OneclickOrderImg,
+            img: '/OneclickOrder.png',
             live: 'https://github.com/Prasannakulal/OneClickOrder',
             code: 'https://github.com/Prasannakulal/OneClickOrder'
           },
@@ -39,7 +34,7 @@ export const Projects: React.FC = () => (
             title: 'Pepper Disease Classification',
             desc: 'Image‑processing and ML pipeline to classify pepper plant diseases with custom dataset and Streamlit UI.',
             tags: ['Python','Image Processing','Machine Learning','Streamlit'],
-            img: PepperDiseaseImg,
+            img: '/PepperDisease.png',
             live: 'https://pepper-disease-classifier.streamlit.app',
             code: 'https://github.com/Prasannakulal/pepper-disease-classifier'
           },
@@ -47,7 +42,7 @@ export const Projects: React.FC = () => (
             title: 'College Database',
             desc: 'Relational database project with clean schema design and queries for academic records.',
             tags: ['SQL','DB Design','Queries'],
-            img: CollegeDatabaseImg,
+            img: '/CollegeDatabase.png',
             live: 'https://college-db-demo.vercel.app',
             code: 'https://github.com/Prasannakulal/college-database'
           }
