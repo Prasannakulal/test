@@ -71,20 +71,75 @@ export const SolarSystemBackground: React.FC = () => {
     }
     scene.add(nebulaGroup);
 
-    // Sun with glow
+    // Realistic sun like the actual sun
     const sunGroup = new THREE.Group();
-    const sunSize = 14; // Original desktop sun size
+    const sunSize = 14;
+    
+    // Core sun sphere - bright white-yellow like real sun
     const sunGeo = new THREE.SphereGeometry(sunSize, 64, 64);
-    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffc107 });
+    const sunMat = new THREE.MeshBasicMaterial({ 
+      color: 0xffffcc, // Bright white-yellow like real sun
+      transparent: true,
+      opacity: 0.7
+    });
     const sun = new THREE.Mesh(sunGeo, sunMat);
     sunGroup.add(sun);
 
-    const sunGlowTex = createRadialGradientTexture('#ffd54f', '#ff6d00', 1024);
-    const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: sunGlowTex, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.55, depthWrite: false, color: 0xffffff }));
-    const glowSize = 120; // Original desktop glow size
-    sunGlow.scale.set(glowSize, glowSize, 1);
-    sunGroup.add(sunGlow);
+    // Inner corona - bright white-yellow
+    const innerCoronaTex = createRadialGradientTexture('#ffffcc', '#ffcc66', 1024);
+    const innerCorona = new THREE.Sprite(new THREE.SpriteMaterial({ 
+      map: innerCoronaTex, 
+      blending: THREE.AdditiveBlending, 
+      transparent: true, 
+      opacity: 0.4, 
+      depthWrite: false, 
+      color: 0xffffff 
+    }));
+    innerCorona.scale.set(90, 90, 1);
+    sunGroup.add(innerCorona);
+
+    // Middle corona - orange
+    const middleCoronaTex = createRadialGradientTexture('#ffcc66', '#ff9933', 1024);
+    const middleCorona = new THREE.Sprite(new THREE.SpriteMaterial({ 
+      map: middleCoronaTex, 
+      blending: THREE.AdditiveBlending, 
+      transparent: true, 
+      opacity: 0.3, 
+      depthWrite: false, 
+      color: 0xffffff 
+    }));
+    middleCorona.scale.set(140, 140, 1);
+    sunGroup.add(middleCorona);
+
+    // Outer corona - red-orange like real sun
+    const outerCoronaTex = createRadialGradientTexture('#ff9933', '#ff6600', 1024);
+    const outerCorona = new THREE.Sprite(new THREE.SpriteMaterial({ 
+      map: outerCoronaTex, 
+      blending: THREE.AdditiveBlending, 
+      transparent: true, 
+      opacity: 0.2, 
+      depthWrite: false, 
+      color: 0xffffff 
+    }));
+    outerCorona.scale.set(200, 200, 1);
+    sunGroup.add(outerCorona);
+
+    // Brightest center glow
+    const centerGlowTex = createRadialGradientTexture('#ffffff', '#ffffcc', 512);
+    const centerGlow = new THREE.Sprite(new THREE.SpriteMaterial({ 
+      map: centerGlowTex, 
+      blending: THREE.AdditiveBlending, 
+      transparent: true, 
+      opacity: 0.5, 
+      depthWrite: false, 
+      color: 0xffffff 
+    }));
+    centerGlow.scale.set(50, 50, 1);
+    sunGroup.add(centerGlow);
+
     scene.add(sunGroup);
+
+
 
     const keyLight = new THREE.PointLight(0xffe7a3, 4.0, 0, 1.8);
     keyLight.position.set(0, 0, 0);
@@ -254,6 +309,8 @@ export const SolarSystemBackground: React.FC = () => {
         p.group.children.forEach((child: THREE.Object3D) => { child.rotation.y += 0.005; });
       });
 
+
+
       // Moon orbit
       const moonAngle = t * 0.65;
       moonPivot.rotation.y = moonAngle;
@@ -369,6 +426,37 @@ function createTrailTexture(width: number, height: number) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
+  return texture;
+}
+
+function createSolarFlareTexture(size: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  // Create a radial gradient for the flare
+  const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+  gradient.addColorStop(0, 'rgba(255, 215, 0, 1)'); // Bright yellow center
+  gradient.addColorStop(0.3, 'rgba(255, 107, 53, 0.8)'); // Orange
+  gradient.addColorStop(0.7, 'rgba(255, 69, 0, 0.4)'); // Red-orange
+  gradient.addColorStop(1, 'rgba(255, 0, 0, 0)'); // Transparent edge
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  // Add some noise for texture
+  const imageData = ctx.getImageData(0, 0, size, size);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const noise = Math.random() * 0.3;
+    data[i] = Math.min(255, data[i] + noise * 255); // Red
+    data[i + 1] = Math.min(255, data[i + 1] + noise * 255); // Green
+    data[i + 2] = Math.min(255, data[i + 2] + noise * 255); // Blue
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
 
